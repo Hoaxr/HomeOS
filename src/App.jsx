@@ -14,6 +14,7 @@ import HomeWizardEnergy from './components/HomeWizardEnergy';
 import NewsTicker from './components/NewsTicker';
 import { Settings } from 'lucide-react';
 import logoUrl from './assets/logo.png';
+import { resolveSecondary } from './utils/theme';
 
 function App() {
   const { config, isLoaded } = useConfig();
@@ -21,20 +22,24 @@ function App() {
   const themeColor = config?.themeColor || '#6366f1';
 
   useEffect(() => {
-    const secondaryColor = {
-      '#6366f1': '#a855f7', // Indigo -> Purple
-      '#10b981': '#06b6d4', // Emerald -> Cyan
-      '#f59e0b': '#f97316', // Amber -> Orange
-      '#f43f5e': '#d946ef', // Rose -> Fuchsia
-      '#0ea5e9': '#6366f1', // Sky -> Indigo
-      '#8b5cf6': '#ec4899', // Violet -> Pink
-    }[themeColor] || '#a855f7';
+    const secondaryColor = resolveSecondary(themeColor);
 
     document.documentElement.style.setProperty('--accent-color', themeColor);
     document.documentElement.style.setProperty('--accent-secondary', secondaryColor);
   }, [themeColor]);
 
-  if (!isLoaded) return <div className="loading">Initializing HomeOS...</div>;
+  if (!isLoaded) {
+    return (
+      <div className="init-loading-screen">
+        <div className="init-logo-container">
+          <img src={logoUrl} alt="HomeOS" className="init-logo" />
+          <div className="init-spinner"></div>
+        </div>
+        <h2>Initializing HomeOS...</h2>
+        <p>Loading your dashboard configuration</p>
+      </div>
+    );
+  }
 
   if (!config || !config.isConfigured) {
     return <SetupWizard />;
