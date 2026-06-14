@@ -12,13 +12,11 @@ const saveAuth = (auth) => localStorage.setItem(STORAGE_KEY, JSON.stringify(auth
 const clearAuth = () => localStorage.removeItem(STORAGE_KEY);
 
 const getRelativeDay = (dateStr) => {
-  const today = new Date().toISOString().split('T')[0];
+  const today    = new Date().toISOString().split('T')[0];
   const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
-  if (dateStr === today) return 'Today';
+  if (dateStr === today)    return 'Today';
   if (dateStr === tomorrow) return 'Tomorrow';
-  return new Date(dateStr).toLocaleDateString('en-GB', {
-    weekday: 'long',
-  });
+  return new Date(dateStr).toLocaleDateString('en-GB', { weekday: 'long' });
 };
 
 // ── Device-code auth flow ──────────────────────────────────────────────────
@@ -120,6 +118,8 @@ const UpcomingShows = () => {
   const [watchStats, setWatchStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // Fixed: track whether auth was silently expired so we can show a helpful message
+  const [sessionExpired, setSessionExpired] = useState(false);
 
   const clientId     = config?.trakt?.clientId;
   const clientSecret = config?.trakt?.clientSecret;
@@ -132,6 +132,7 @@ const UpcomingShows = () => {
     clearAuth();
     setAuth(null);
     setShows([]);
+    setSessionExpired(false);
   };
 
   useEffect(() => {
@@ -154,9 +155,10 @@ const UpcomingShows = () => {
         });
 
         if (res.status === 401) {
-          // Token expired
+          // Token expired — show a clear message instead of silently dropping back to login
           clearAuth();
           setAuth(null);
+          setSessionExpired(true);
           setLoading(false);
           return;
         }
@@ -187,8 +189,8 @@ const UpcomingShows = () => {
         });
 
         const transformed = Array.from(groupedMap.values()).slice(0, maxShows);
-
         setShows(transformed);
+        setSessionExpired(false);
 
         // Fetch all-time stats
         try {
@@ -255,8 +257,23 @@ const UpcomingShows = () => {
           </p>
         )}
 
+        {/* Session expired — show clear message with reconnect button */}
+        {hasCredentials && sessionExpired && (
+          <div className="trakt-auth">
+            <p className="status-msg error">Your Trakt session has expired.</p>
+            <button
+              className="btn-primary trakt-btn"
+              onClick={() => {
+                setSessionExpired(false);
+              }}
+            >
+              <Link size={16} /> Reconnect Trakt
+            </button>
+          </div>
+        )}
+
         {/* Needs auth */}
-        {hasCredentials && !auth && (
+        {hasCredentials && !auth && !sessionExpired && (
           <DeviceAuthPrompt
             clientId={clientId}
             clientSecret={clientSecret}
@@ -270,11 +287,11 @@ const UpcomingShows = () => {
         )}
         {auth && error && <p className="status-msg error">{error}</p>}
         {auth && !loading && shows.length === 0 && !error && (
-          <p className="status-msg">No upcoming episodes in the next 4 days.</p>
+          <p className="status-msg">No upcoming episodes in the next {showLookaheadDays} days.</p>
         )}
         {auth && shows.map((show) => {
           let pillClass = 'upcoming';
-          if (show.day === 'Today') pillClass = 'today';
+          if (show.day === 'Today')    pillClass = 'today';
           else if (show.day === 'Tomorrow') pillClass = 'tomorrow';
 
           return (

@@ -10,7 +10,8 @@ const DoorbellFeed = () => {
   const doorbellConfig = config?.reolink;
   
   const [error, setError] = useState(false);
-  const [lastRefresh, setLastRefresh] = useState(null);
+  // Fixed: removed lastRefresh state — it was set on every frame (~7fps) but
+  // never displayed in JSX, causing needless re-renders.
   const [initialSrc, setInitialSrc] = useState(null);
   
   const imgRef = useRef(null);
@@ -31,7 +32,6 @@ const DoorbellFeed = () => {
       if (!activeRef.current) return;
       
       setError(false);
-      setLastRefresh(new Date());
       
       // Swap the source directly for instant, flicker-free rendering
       if (imgRef.current) {

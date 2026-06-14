@@ -3,12 +3,14 @@ import { Droplet } from 'lucide-react';
 import { useWeather } from '../context/WeatherContext';
 import AnimatedWeatherIcon from './AnimatedWeatherIcon';
 
+// Fixed: WeatherIcon moved outside WeatherForecast so React doesn't
+// unmount/remount it on every parent re-render (was a new function ref each time).
+const WeatherIcon = ({ condition }) => (
+  <AnimatedWeatherIcon code={condition} size={24} />
+);
+
 const WeatherForecast = () => {
   const { forecast, loading } = useWeather();
-
-  const WeatherIcon = ({ condition }) => {
-    return <AnimatedWeatherIcon code={condition} size={24} />;
-  };
 
   if (loading && forecast.length === 0) {
     return (

@@ -11,9 +11,9 @@ export const ConfigProvider = ({ children }) => {
   const saveConfigToServer = async (newConfig) => {
     try {
       const res = await fetch('/api/config', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newConfig),
+        method: newConfig === null ? 'DELETE' : 'POST',
+        headers: newConfig !== null ? { 'Content-Type': 'application/json' } : {},
+        body: newConfig !== null ? JSON.stringify(newConfig) : undefined,
       });
       if (!res.ok) throw new Error('HTTP ' + res.status);
     } catch (err) {
@@ -58,6 +58,8 @@ export const ConfigProvider = ({ children }) => {
   const clearConfig = async () => {
     setConfig(null);
     localStorage.removeItem('home_dashboard_config');
+    // Fixed: use DELETE instead of POST(null) so the server actually removes
+    // the file rather than writing a literal `null` JSON value.
     await saveConfigToServer(null);
   };
 

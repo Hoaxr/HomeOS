@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Sun, Moon } from 'lucide-react';
-
 import { useConfig } from '../context/ConfigContext';
 
 const GlobalClocks = () => {
@@ -18,6 +17,46 @@ const GlobalClocks = () => {
     const timer = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  /**
+   * Derives the UTC-offset difference (in whole hours) between the browser's
+   * local timezone and a target IANA timezone, using only Intl.DateTimeFormat.
+   * This avoids the non-standard `new Date(toLocaleString(...))` pattern that
+   * breaks on Firefox.
+   */
+  const getOffsetHours = (timeZone) => {
+    try {
+      // Extract the numeric hour in 24h format for both timezones from the
+      // same instant, then subtract. We use 'en-US' with hour12:false and
+      // a known reference point (the current Date) for both.
+      const fmt = (tz) =>
+        new Intl.DateTimeFormat('en-US', {
+          timeZone: tz,
+          hour: 'numeric',
+          minute: 'numeric',
+          hour12: false,
+        }).formatToParts(now);
+
+      const localTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const toParts = (parts) => {
+        const h = parseInt(parts.find(p => p.type === 'hour')?.value ?? '0', 10);
+        const m = parseInt(parts.find(p => p.type === 'minute')?.value ?? '0', 10);
+        return h * 60 + m;
+      };
+
+      const localMins  = toParts(fmt(localTz));
+      const targetMins = toParts(fmt(timeZone));
+
+      // Account for day boundary wrap-around (±720 minutes = ±12 hours)
+      let diffMins = targetMins - localMins;
+      if (diffMins > 720)  diffMins -= 1440;
+      if (diffMins < -720) diffMins += 1440;
+
+      return Math.round(diffMins / 60);
+    } catch {
+      return null;
+    }
+  };
 
   return (
     <div className="clock-container">
@@ -56,15 +95,13 @@ const GlobalClocks = () => {
           if (parsedHhmm) hhmm = parsedHhmm;
           if (parsedSs) ss = parsedSs;
 
-          const localDayStr = new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(now);
+          const localDayStr  = new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(now);
           const targetDayStr = new Intl.DateTimeFormat('en-US', { timeZone, weekday: 'short' }).format(now);
           relativeDay = localDayStr === targetDayStr ? 'Today' : targetDayStr;
 
-          const localTime = new Date(now.toLocaleString('en-US', { timeZone: undefined }));
-          const targetTime = new Date(now.toLocaleString('en-US', { timeZone }));
-          const diffMs = targetTime - localTime;
-          const diffHrs = Math.round(diffMs / (1000 * 60 * 60));
-          if (diffHrs === 0) {
+          // Use the standards-compliant offset helper (fixes Firefox breakage)
+          const diffHrs = getOffsetHours(timeZone);
+          if (diffHrs === null || diffHrs === 0) {
             offsetStr = 'Local';
           } else {
             offsetStr = diffHrs > 0 ? `+${diffHrs}h` : `${diffHrs}h`;
@@ -74,7 +111,7 @@ const GlobalClocks = () => {
         }
 
         const accentColor = isNight ? '#a78bfa' : '#fbbf24';
-        const glowColor = isNight ? 'rgba(139, 92, 246, 0.25)' : 'rgba(251, 191, 36, 0.25)';
+        const glowColor   = isNight ? 'rgba(139, 92, 246, 0.25)' : 'rgba(251, 191, 36, 0.25)';
 
         return (
           <div
@@ -117,4 +154,3 @@ const GlobalClocks = () => {
 };
 
 export default GlobalClocks;
-

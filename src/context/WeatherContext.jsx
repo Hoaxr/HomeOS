@@ -19,7 +19,10 @@ export const WeatherProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Extract primitives so useCallback dependency is stable (fix: was new object every render)
   const location = resolveLocation(config);
+  const lat = location.lat;
+  const lon = location.lon;
 
   const fetchWeather = useCallback(async () => {
     setLoading(true);
@@ -30,7 +33,7 @@ export const WeatherProvider = ({ children }) => {
 
     // 1. Fetch unified weather data from Open-Meteo
     try {
-      const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${location.lat}&longitude=${location.lon}` +
+      const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
         `&current=temperature_2m,apparent_temperature,relative_humidity_2m,precipitation_probability,weather_code,wind_speed_10m,wind_direction_10m` +
         `&hourly=uv_index,precipitation_probability,cloud_cover` +
         `&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max,precipitation_sum` +
@@ -46,7 +49,6 @@ export const WeatherProvider = ({ children }) => {
           const pastRainSum = json.daily.precipitation_sum?.slice(0, 3).reduce((a, b) => a + b, 0) ?? 0;
 
           // Hourly precipitation for today: hours 0-23 of the first forecast day (index 72 onward since past_days=3)
-          // Open-Meteo returns hourly for past_days+forecast_days, so today starts at hour 72
           const todayHourOffset = 3 * 24; // 3 past days × 24 hours
           const hourlyPrecip = json.hourly?.precipitation_probability
             ?.slice(todayHourOffset, todayHourOffset + 24) ?? [];
@@ -66,7 +68,7 @@ export const WeatherProvider = ({ children }) => {
             cloud_cover: currentCloudCover,
           };
 
-          // Index 3 is today, index 3 to 7 are the 5 forecast days (today, tomorrow, +2, +3, +4)
+          // Index 3 is today, index 3 to 7 are the 5 forecast days
           const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
           forecastData = json.daily.time.slice(3, 8).map((t, i) => {
             const date = new Date(t);
@@ -92,7 +94,7 @@ export const WeatherProvider = ({ children }) => {
     // If Open-Meteo failed, use wttr.in to load both current weather and forecast
     if (!weatherData || !forecastData) {
       try {
-        const res = await fetch(`https://wttr.in/${location.lat},${location.lon}?format=j1`);
+        const res = await fetch(`https://wttr.in/${lat},${lon}?format=j1`);
         if (res.ok) {
           const json = await res.json();
           const current = json.current_condition?.[0];
@@ -137,7 +139,7 @@ export const WeatherProvider = ({ children }) => {
     // If forecast is still empty, attempt 7timer fallback
     if (!forecastData) {
       try {
-        const res = await fetch(`/api/forecast?lat=${location.lat}&lon=${location.lon}`);
+        const res = await fetch(`/api/forecast?lat=${lat}&lon=${lon}`);
         if (res.ok) {
           const json = await res.json();
           if (json.dataseries) {
@@ -171,35 +173,35 @@ export const WeatherProvider = ({ children }) => {
       }
     }
 
-    // 3. Fetch AQI and Pollen from Open-Meteo Air Quality API
-    try {
-      const airQualityUrl = `https://air-quality-api.open-meteo.com/v1/air-quality` +
-        `?latitude=${location.lat}&longitude=${location.lon}` +
-        `&current=european_aqi` +
-        `&hourly=grass_pollen,birch_pollen,alder_pollen,mugwort_pollen,ragweed_pollen` +
-        `&timezone=auto&forecast_days=1`;
-
-      const res = await fetch(airQualityUrl);
-      if (res.ok) {
-        const json = await res.json();
-        aqiVal = json.current?.european_aqi ?? null;
-
-        if (json.hourly) {
-          const h = json.hourly;
-          const nowHour = new Date().getHours();
-          pollenVal = {
-            grass: h.grass_pollen?.[nowHour] ?? 0,
-            trees: Math.max(h.birch_pollen?.[nowHour] ?? 0, h.alder_pollen?.[nowHour] ?? 0),
-            weeds: Math.max(h.mugwort_pollen?.[nowHour] ?? 0, h.ragweed_pollen?.[nowHour] ?? 0),
-          };
-        }
-      }
-    } catch (e) {
-      console.warn('AQI and Pollen fetch failed:', e);
-    }
-
-    // Combine current weather, AQI, and pollen
+    // 3. Fetch AQI and Pollen — only if weather data was successfully retrieved (fix: was firing even when offline)
     if (weatherData) {
+      try {
+        const airQualityUrl = `https://air-quality-api.open-meteo.com/v1/air-quality` +
+          `?latitude=${lat}&longitude=${lon}` +
+          `&current=european_aqi` +
+          `&hourly=grass_pollen,birch_pollen,alder_pollen,mugwort_pollen,ragweed_pollen` +
+          `&timezone=auto&forecast_days=1`;
+
+        const res = await fetch(airQualityUrl);
+        if (res.ok) {
+          const json = await res.json();
+          aqiVal = json.current?.european_aqi ?? null;
+
+          if (json.hourly) {
+            const h = json.hourly;
+            const nowHour = new Date().getHours();
+            pollenVal = {
+              grass: h.grass_pollen?.[nowHour] ?? 0,
+              trees: Math.max(h.birch_pollen?.[nowHour] ?? 0, h.alder_pollen?.[nowHour] ?? 0),
+              weeds: Math.max(h.mugwort_pollen?.[nowHour] ?? 0, h.ragweed_pollen?.[nowHour] ?? 0),
+            };
+          }
+        }
+      } catch (e) {
+        console.warn('AQI and Pollen fetch failed:', e);
+      }
+
+      // Combine current weather, AQI, and pollen
       setWeather({
         ...weatherData,
         aqi: aqiVal,
@@ -215,7 +217,7 @@ export const WeatherProvider = ({ children }) => {
     }
 
     setLoading(false);
-  }, [location.lat, location.lon]);
+  }, [lat, lon]);
 
   useEffect(() => {
     fetchWeather();

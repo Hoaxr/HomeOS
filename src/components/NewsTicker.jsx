@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useConfig } from '../context/ConfigContext';
 import { AlertCircle } from 'lucide-react';
 
@@ -9,9 +9,6 @@ const DEFAULT_SOURCES = [
   { id: 'ad',        label: 'AD',        color: '#e9c46a', url: 'https://www.ad.nl/rss.xml' },
   { id: 'crimesite', label: 'Crimesite', color: '#a8dadc', url: 'https://www.crimesite.nl/feed/' },
 ];
-
-/* ── Rotation interval (ms) ─────────────────────────────── */
-const ROTATE_MS = 30_000;
 
 /* ── Relative time helper ─────────────────────────────── */
 const formatAge = (pubDate) => {
@@ -79,7 +76,15 @@ const fetchItems = async (rssUrl, limit = 25) => {
 /* ── Component ────────────────────────────────────────── */
 const NewsTicker = ({ feeds }) => {
   const { config } = useConfig();
-  const sources = feeds ? feeds : ((config?.rssFeeds?.length > 0) ? config.rssFeeds : DEFAULT_SOURCES);
+
+  // Fixed: use useMemo to produce a stable `sources` reference instead of
+  // the previous inline `.map(...).join(',')` trick inside the dependency array
+  // (which required an eslint-disable comment).
+  const sources = useMemo(
+    () => feeds ? feeds : ((config?.rssFeeds?.length > 0) ? config.rssFeeds : DEFAULT_SOURCES),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [feeds, config?.rssFeeds]
+  );
 
   const [activeIdx, setActiveIdx] = useState(0);
   const [cache, setCache]         = useState({});
@@ -93,11 +98,11 @@ const NewsTicker = ({ feeds }) => {
   const hasError     = cache[activeSource?.id] === null;
   const loading      = cache[activeSource?.id] === undefined;
 
-  const newsLimit = config?.newsLimit || 25;
+  const newsLimit     = config?.newsLimit || 25;
   const rotateSeconds = config?.newsRotationSpeed || 30;
-  const rotateMs = rotateSeconds * 1000;
+  const rotateMs      = rotateSeconds * 1000;
 
-  /* Pre-fetch ALL sources on mount */
+  /* Pre-fetch ALL sources on mount / when sources change */
   useEffect(() => {
     sources.forEach(src => {
       fetchItems(src.url, newsLimit).then(result => {
@@ -114,8 +119,7 @@ const NewsTicker = ({ feeds }) => {
       });
     }, 10 * 60 * 1000);
     return () => clearInterval(refresh);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sources.map(s => s.id).join(','), newsLimit]);
+  }, [sources, newsLimit]);
 
   /* Auto-rotate when not paused */
   useEffect(() => {

@@ -4,108 +4,22 @@ import { useConfig } from '../context/ConfigContext';
 import { useWeather } from '../context/WeatherContext';
 import { resolveLocation } from '../utils/location';
 import { parseAstronomyTime } from '../utils/weather';
-
-// ─── Moon Phase Calculation ──────────────────────────────────────────────────
-const getMoonPhase = (date = new Date()) => {
-  const year = date.getFullYear();
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-
-  let jdn = 367 * year
-    - Math.floor((7 * (year + Math.floor((month + 9) / 12))) / 4)
-    + Math.floor((275 * month) / 9)
-    + day
-    + 1721013.5;
-
-  const knownNew = 2451550.1;
-  const synodicMonth = 29.53058867;
-
-  const daysSinceNew = jdn - knownNew;
-  const phase = ((daysSinceNew % synodicMonth) + synodicMonth) % synodicMonth;
-  const illumination = Math.round(50 * (1 - Math.cos((phase / synodicMonth) * 2 * Math.PI)));
-
-  const phases = [
-    { name: 'New Moon',        emoji: '🌑', range: [0, 1.85] },
-    { name: 'Waxing Crescent', emoji: '🌒', range: [1.85, 7.38] },
-    { name: 'First Quarter',   emoji: '🌓', range: [7.38, 11.08] },
-    { name: 'Waxing Gibbous',  emoji: '🌔', range: [11.08, 14.77] },
-    { name: 'Full Moon',       emoji: '🌕', range: [14.77, 16.61] },
-    { name: 'Waning Gibbous',  emoji: '🌖', range: [16.61, 22.15] },
-    { name: 'Last Quarter',    emoji: '🌗', range: [22.15, 25.84] },
-    { name: 'Waning Crescent', emoji: '🌘', range: [25.84, 29.53] },
-  ];
-
-  const phaseInfo = phases.find(p => phase >= p.range[0] && phase < p.range[1]) ?? phases[0];
-  const daysToFull = phase < 14.77
-    ? Math.round(14.77 - phase)
-    : Math.round(synodicMonth - phase + 14.77);
-  const isWaxing = phase < 14.77;
-
-  return { ...phaseInfo, illumination, phase: Math.round(phase), daysToFull, isWaxing };
-};
-
-// ─── Moon SVG Visual ─────────────────────────────────────────────────────────
-const MoonVisual = ({ illumination, isWaxing, size = 52, uid = 'main' }) => {
-  const R = 20, cx = 24, cy = 24;
-  const pct = illumination / 100;
-  const rx = Math.abs(R - 2 * R * pct);
-  const sweepOuter = isWaxing ? 1 : 0;
-  const sweepInner = pct < 0.5 ? (isWaxing ? 0 : 1) : (isWaxing ? 1 : 0);
-  const pathD = `M ${cx} ${cy - R} A ${R} ${R} 0 0 ${sweepOuter} ${cx} ${cy + R} A ${rx} ${R} 0 0 ${sweepInner} ${cx} ${cy - R} Z`;
-
-  const isSmall = size < 30;
-  const strokeW = isSmall ? 1.6 : 0.8;
-  const strokeColor = isSmall ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.2)';
-  const darkOpacity0 = isSmall ? 0.95 : 0.8;
-  const darkOpacity60 = isSmall ? 0.85 : 0.6;
-  const darkOpacity100 = isSmall ? 0.65 : 0.4;
-
-  const gradId = `moon-${uid}-${size}`;
-
-  return (
-    <svg viewBox="0 0 48 48" width={size} height={size} className="moon-visual-svg">
-      <defs>
-        <radialGradient id={`moon-lit-${gradId}`} cx="40%" cy="40%" r="60%">
-          <stop offset="0%"   stopColor="#fffbeb" />
-          <stop offset="65%"  stopColor="#fef08a" />
-          <stop offset="90%"  stopColor="#eab308" />
-          <stop offset="100%" stopColor="#ca8a04" />
-        </radialGradient>
-        <radialGradient id={`moon-dark-${gradId}`} cx="40%" cy="40%" r="60%">
-          <stop offset="0%"   stopColor="#3b4252" stopOpacity={darkOpacity0} />
-          <stop offset="60%"  stopColor="#2e3440" stopOpacity={darkOpacity60} />
-          <stop offset="100%" stopColor="#1a1c23" stopOpacity={darkOpacity100} />
-        </radialGradient>
-        <mask id={`moon-mask-${gradId}`}>
-          <rect x="0" y="0" width="48" height="48" fill="black" />
-          <path d={pathD} fill="white" />
-        </mask>
-      </defs>
-      <circle cx={cx} cy={cy} r={R} fill={`url(#moon-dark-${gradId})`} stroke={strokeColor} strokeWidth={strokeW} />
-      <circle cx="16" cy="18" r="1.5" className="moon-crater" style={{ opacity: isSmall ? 0.55 : 0.35 }} />
-      <circle cx="14" cy="28" r="2"   className="moon-crater" style={{ opacity: isSmall ? 0.55 : 0.35 }} />
-      <circle cx="28" cy="15" r="1.2" className="moon-crater" style={{ opacity: isSmall ? 0.55 : 0.35 }} />
-      <circle cx={cx} cy={cy} r={R} fill={`url(#moon-lit-${gradId})`} mask={`url(#moon-mask-${gradId})`} />
-      <g mask={`url(#moon-mask-${gradId})`}>
-        <circle cx="20" cy="18" r="2.5" className="moon-crater" />
-        <circle cx="15" cy="30" r="1.5" className="moon-crater" />
-        <circle cx="28" cy="16" r="2"   className="moon-crater" />
-        <circle cx="32" cy="27" r="3"   className="moon-crater" />
-        <circle cx="23" cy="33" r="1.5" className="moon-crater" />
-      </g>
-    </svg>
-  );
-};
+import { getMoonPhase, scheduleMoonRefresh, MoonVisual } from '../utils/moon';
 
 // ─── Combined Sky Card ────────────────────────────────────────────────────────
 const SkyCard = () => {
   const { config } = useConfig();
   const { weather } = useWeather();
-  const [moon] = useState(() => getMoonPhase());
+  const [moon, setMoon] = useState(() => getMoonPhase());
   const [sunData, setSunData] = useState(null);
   const [now, setNow] = useState(new Date());
 
   const location = resolveLocation(config);
+
+  // Refresh moon phase at midnight, then every 24 h (fix: was never refreshed)
+  useEffect(() => {
+    return scheduleMoonRefresh(setMoon);
+  }, []);
 
   // Fetch sunrise/sunset
   useEffect(() => {
@@ -160,17 +74,17 @@ const SkyCard = () => {
 
     if (now >= sunrise && now <= sunset) {
       // Day mode
-      const pct = ((now - sunrise) / (sunset - sunrise)) * 100;
+      const pct = Math.min(100, Math.max(0, ((now - sunrise) / (sunset - sunrise)) * 100));
       return { pct, isDay: true };
     } else if (now > sunset) {
       // Night mode (after sunset today)
       const nextSunrise = new Date(sunrise.getTime() + 86400000);
-      const pct = ((now - sunset) / (nextSunrise - sunset)) * 100;
+      const pct = Math.min(100, Math.max(0, ((now - sunset) / (nextSunrise - sunset)) * 100));
       return { pct, isDay: false };
     } else {
       // Night mode (before sunrise today)
       const prevSunset = new Date(sunset.getTime() - 86400000);
-      const pct = ((now - prevSunset) / (sunrise - prevSunset)) * 100;
+      const pct = Math.min(100, Math.max(0, ((now - prevSunset) / (sunrise - prevSunset)) * 100));
       return { pct, isDay: false };
     }
   };
@@ -200,14 +114,14 @@ const SkyCard = () => {
     return `${formatTime(Math.round(msUntilSunrise / 60000))} until sunrise`;
   };
 
-  // Compute golden & blue hours from sunrise/sunset
+  // Compute golden hours from sunrise/sunset
   const getGoldenBlueHours = () => {
     if (!sunData) return null;
     const addMin = (date, mins) => new Date(date.getTime() + mins * 60000);
     const fmtT = (d) => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
     return {
-      morningGold:  `${fmtT(sunData.sunrise)}–${fmtT(addMin(sunData.sunrise, 40))}`,
-      eveningGold:  `${fmtT(addMin(sunData.sunset, -40))}–${fmtT(sunData.sunset)}`,
+      morningGold: `${fmtT(sunData.sunrise)}–${fmtT(addMin(sunData.sunrise, 40))}`,
+      eveningGold: `${fmtT(addMin(sunData.sunset, -40))}–${fmtT(sunData.sunset)}`,
     };
   };
   const goldenBlue = getGoldenBlueHours();
@@ -222,8 +136,6 @@ const SkyCard = () => {
     : starzScore >= 60 ? { label: 'Good',      icon: '🌟', color: '#a3e635' }
     : starzScore >= 40 ? { label: 'Fair',      icon: '🌥️', color: '#f59e0b' }
     :                    { label: 'Poor',      icon: '☁️',  color: '#94a3b8' };
-
-  const uvIndex = weather?.uv_index ?? null;
 
   return (
     <div className="glass-card sky-card">
@@ -240,7 +152,7 @@ const SkyCard = () => {
 
         {/* Moon column */}
         <div className="sky-moon-col">
-          <MoonVisual illumination={moon.illumination} isWaxing={moon.isWaxing} size={52} uid="sky" />
+          <MoonVisual illumination={moon.illumination} isWaxing={moon.isWaxing} size={52} uid="sky-main" />
           <div className="moon-info">
             <span className="moon-phase-name">{moon.name}</span>
             <span className="moon-sub">{moon.illumination}% illuminated</span>

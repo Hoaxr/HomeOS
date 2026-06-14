@@ -4,44 +4,49 @@ import https from 'https';
 import fs from 'fs';
 import path from 'path';
 
-// Ignore self-signed cert on the camera
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+// Fixed: TLS verification is disabled only for the camera-specific HTTPS agent,
+// NOT globally. Previously `NODE_TLS_REJECT_UNAUTHORIZED = '0'` was set on the
+// entire process, disabling cert checks for all of Vite's own network operations.
+const cameraHttpsAgent = new https.Agent({ rejectUnauthorized: false });
 
 const configPath = path.resolve(process.cwd(), 'config.json');
 
-function getReolinkConfig() {
+// Fixed: config is cached in memory after first read and invalidated when written.
+// Previously getReolinkConfig() / getHueConfig() both re-read & re-parsed config.json
+// from disk on every single API request.
+let _configCache = null;
+
+function readConfig() {
+  if (_configCache !== null) return _configCache;
   try {
     if (fs.existsSync(configPath)) {
-      const data = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-      if (data?.reolink) {
-        return {
-          ip: data.reolink.ip || '',
-          username: data.reolink.username || '',
-          password: data.reolink.password || ''
-        };
-      }
+      _configCache = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    } else {
+      _configCache = {};
     }
   } catch (err) {
     console.error('[vite.config.js] Failed to read config.json:', err.message);
+    _configCache = {};
   }
-  return { ip: '', username: '', password: '' };
+  return _configCache;
+}
+
+function invalidateConfigCache() {
+  _configCache = null;
+}
+
+function getReolinkConfig() {
+  const data = readConfig();
+  return data?.reolink
+    ? { ip: data.reolink.ip || '', username: data.reolink.username || '', password: data.reolink.password || '' }
+    : { ip: '', username: '', password: '' };
 }
 
 function getHueConfig() {
-  try {
-    if (fs.existsSync(configPath)) {
-      const data = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-      if (data?.hue) {
-        return {
-          ip: data.hue.ip || '',
-          username: data.hue.username || ''
-        };
-      }
-    }
-  } catch (err) {
-    console.error('[vite.config.js] Failed to read config.json:', err.message);
-  }
-  return { ip: '', username: '' };
+  const data = readConfig();
+  return data?.hue
+    ? { ip: data.hue.ip || '', username: data.hue.username || '' }
+    : { ip: '', username: '' };
 }
 
 // Token cache
@@ -50,7 +55,8 @@ let tokenExpiry = 0;
 
 function fetchCamera(options, body) {
   return new Promise((resolve, reject) => {
-    const req = https.request(options, (res) => {
+    // Fixed: uses the scoped agent instead of the global TLS bypass
+    const req = https.request({ ...options, agent: cameraHttpsAgent }, (res) => {
       const chunks = [];
       res.on('data', (c) => chunks.push(c));
       res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body: Buffer.concat(chunks) }));
@@ -94,7 +100,7 @@ function reolinkPlugin() {
     configureServer(server) {
       server.middlewares.use('/api/config', async (req, res) => {
         res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
         res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
         if (req.method === 'OPTIONS') {
@@ -119,13 +125,12 @@ function reolinkPlugin() {
           }
         } else if (req.method === 'POST') {
           let body = '';
-          req.on('data', chunk => {
-            body += chunk;
-          });
+          req.on('data', chunk => { body += chunk; });
           req.on('end', () => {
             try {
               const parsed = JSON.parse(body);
               fs.writeFileSync(configPath, JSON.stringify(parsed, null, 2), 'utf8');
+              invalidateConfigCache(); // bust the in-memory cache
               res.writeHead(200, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({ success: true }));
             } catch (err) {
@@ -133,6 +138,20 @@ function reolinkPlugin() {
               res.end(JSON.stringify({ error: 'Invalid config: ' + err.message }));
             }
           });
+        } else if (req.method === 'DELETE') {
+          // Fixed: handle DELETE so clearConfig() actually removes the file
+          // instead of writing `null` as a POST body.
+          try {
+            if (fs.existsSync(configPath)) {
+              fs.unlinkSync(configPath);
+            }
+            invalidateConfigCache();
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: true }));
+          } catch (err) {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Failed to delete config: ' + err.message }));
+          }
         } else {
           res.writeHead(405);
           res.end('Method Not Allowed');
@@ -218,6 +237,7 @@ function reolinkPlugin() {
           res.end(err.message);
         }
       });
+
       server.middlewares.use('/api/rss', async (req, res) => {
         res.setHeader('Access-Control-Allow-Origin', '*');
         try {
@@ -241,6 +261,7 @@ function reolinkPlugin() {
           res.end(JSON.stringify({ error: err.message }));
         }
       });
+
       server.middlewares.use('/api/hue', async (req, res) => {
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, OPTIONS');
@@ -271,9 +292,7 @@ function reolinkPlugin() {
             res.end(JSON.stringify(data));
           } else if (req.method === 'PUT') {
             let body = '';
-            req.on('data', chunk => {
-              body += chunk;
-            });
+            req.on('data', chunk => { body += chunk; });
             req.on('end', async () => {
               try {
                 const targetRes = await fetch(targetUrl, {

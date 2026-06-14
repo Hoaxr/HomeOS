@@ -74,13 +74,15 @@ const getAqiColor = (v) => {
   return '#a855f7';
 };
 
+// Fixed: added null-guard — value can be null/undefined from the AQI API
 const PollenRow = ({ label, value }) => {
-  const level = getPollenLevel(value);
+  const safeValue = value ?? 0;
+  const level = getPollenLevel(safeValue);
   return (
     <div className="cw-pollen-row">
       <span className="cw-pollen-label">{label}</span>
       <span className="cw-pollen-value" style={{ color: level.color }}>
-        {level.label} ({value.toFixed(1)})
+        {level.label} ({safeValue.toFixed(1)})
       </span>
     </div>
   );
@@ -88,8 +90,6 @@ const PollenRow = ({ label, value }) => {
 
 const CurrentWeather = () => {
   const { weather, loading } = useWeather();
-
-
 
   const wearShorts = weather && (weather.temperature_2m >= 18 && (weather.precipitation_probability ?? 0) < 20);
 

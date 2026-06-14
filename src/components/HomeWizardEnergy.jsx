@@ -7,6 +7,9 @@ const getSlotIndex = () => {
   return Math.floor((now.getHours() * 60 + now.getMinutes()) / 15);
 };
 
+// Fixed: todayKey moved above loadDayHistory / loadDayBaselines which both call it.
+const todayKey = () => new Date().toISOString().split('T')[0];
+
 const loadDayHistory = () => {
   try {
     const stored = JSON.parse(localStorage.getItem('hw_day_history_v2'));
@@ -17,8 +20,6 @@ const loadDayHistory = () => {
 
 const saveDayHistory = (history) =>
   localStorage.setItem('hw_day_history_v2', JSON.stringify(history));
-
-const todayKey = () => new Date().toISOString().split('T')[0];
 
 const loadDayBaselines = () => {
   try {
