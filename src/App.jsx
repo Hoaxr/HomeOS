@@ -61,21 +61,21 @@ function App() {
       </header>
 
       <main className="main-grid">
-        <div className="left-columns-group" style={{ gridColumn: 'span 8', display: 'flex', flexDirection: 'column', gap: '16px', height: '100%', justifyContent: 'space-between' }}>
+        <div className="left-columns-group">
           {/* Row 1 */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', alignItems: 'stretch' }}>
+          <div className="dashboard-row">
             <DoorbellFeed />
             <UpcomingShows />
           </div>
           {/* Row 2 */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', alignItems: 'stretch' }}>
+          <div className="dashboard-row">
             <CurrentWeather />
             <CryptoStats />
           </div>
         </div>
 
         {/* Col 3 */}
-        <div className="column-3-group" style={{ gridColumn: 'span 4' }}>
+        <div className="column-3-group">
           <SkyCard />
           <HomeWizardEnergy />
           <HueControls />
@@ -87,7 +87,7 @@ function App() {
         </div>
 
         {/* Row 4: News Ticker – full width */}
-        <div className="forecast-full-width" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div className="forecast-full-width news-ticker-group">
           <NewsTicker />
           <NewsTicker feeds={[
             { id: 'dvds-releases', label: 'New Movie Releases', color: '#10b981', url: 'https://feeds.feedburner.com/DVDsReleaseDates' }

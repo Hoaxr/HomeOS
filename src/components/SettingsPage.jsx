@@ -5,6 +5,9 @@ import {
   Trash2, Save, X, ChevronRight, Settings, Shield, Info
 } from 'lucide-react';
 import { useConfig } from '../context/ConfigContext';
+import { POPULAR_COINS } from '../utils/coins';
+import { resolveSecondary } from '../utils/theme';
+import { useLocationSearch } from '../hooks/useLocationSearch';
 import { AVAILABLE_CLOCKS } from '../utils/all_clocks';
 
 const POPULAR_COINS = [
@@ -51,90 +54,48 @@ const SettingsPage = ({ onClose }) => {
       homewizard: base.homewizard || { ip: '192.168.1.70' },
       trakt: base.trakt || { clientId: '', clientSecret: '' },
       location: base.location || { city: 'Papendrecht', lat: 51.83, lon: 4.68 },
+      themeColor: base.themeColor || '#6366f1',
+      showLookaheadDays: base.showLookaheadDays || 4,
+      maxShows: base.maxShows || 5,
       crypto: base.crypto || ['bitcoin', 'ethereum'],
       cryptoPeriod: base.cryptoPeriod || '7d',
-      clocks: base.clocks || [
-        { id: 'nl', label: 'Netherlands', flag: '🇳🇱', timeZone: 'Europe/Amsterdam' },
-        { id: 'us-ny', label: 'America', flag: '🇺🇸', timeZone: 'America/New_York' },
-        { id: 'ru', label: 'Russia', flag: '🇷🇺', timeZone: 'Europe/Moscow' },
-        { id: 'cn', label: 'China', flag: '🇨🇳', timeZone: 'Asia/Shanghai' },
-      ],
+      newsLimit: base.newsLimit || 25,
+      newsRotationSpeed: base.newsRotationSpeed || 30,
       rssFeeds: base.rssFeeds || [
         { id: 'nos',       label: 'NOS',       color: '#e63946', url: 'https://feeds.nos.nl/nosnieuwsalgemeen' },
         { id: 'tweakers',  label: 'Tweakers',  color: '#f4a261', url: 'https://tweakers.net/feeds/mixed.xml' },
         { id: 'ad',        label: 'AD',        color: '#e9c46a', url: 'https://www.ad.nl/rss.xml' },
         { id: 'crimesite', label: 'Crimesite', color: '#a8dadc', url: 'https://www.crimesite.nl/feed/' },
       ],
-      energyTariffNormal: base.energyTariffNormal || '0.22',
-      energyTariffDal: base.energyTariffDal || '0.20',
-      gasTariff: base.gasTariff || '1.05',
-      themeColor: base.themeColor || '#6366f1',
-      newsRotationSpeed: base.newsRotationSpeed || 30,
-      newsLimit: base.newsLimit || 25,
-      showLookaheadDays: base.showLookaheadDays || 4,
-      maxShows: base.maxShows || 5,
+      energyTariffNormal: base.energyTariffNormal || 0.22,
+      energyTariffDal: base.energyTariffDal || 0.20,
+      gasTariff: base.gasTariff || 1.05,
+      isConfigured: true
     };
   });
 
-  const [locationSearch, setLocationSearch] = useState(() => formData.location.city || '');
-  const [locationDirty, setLocationDirty] = useState(false);
-  const [locationSuggestions, setLocationSuggestions] = useState([]);
-  const [locationLoading, setLocationLoading] = useState(false);
+  const {
+    locationSearch,
+    setLocationSearch,
+    locationSuggestions,
+    setLocationSuggestions,
+    locationLoading
+  } = useLocationSearch(formData.location.city || '');
   const [cryptoSearch, setCryptoSearch] = useState('');
   const [clockSearch, setClockSearch] = useState('');
   const [feedUrl, setFeedUrl] = useState('');
   const [feedLabel, setFeedLabel] = useState('');
 
-  // Geocoding suggestions search
-  useEffect(() => {
-    if (!locationDirty || locationSearch.trim().length < 3) {
-      setLocationSuggestions([]);
-      return;
-    }
-    const delayDebounceId = setTimeout(async () => {
-      setLocationLoading(true);
-      try {
-        const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(locationSearch)}&count=5&language=en&format=json`);
-        if (res.ok) {
-          const json = await res.json();
-          setLocationSuggestions(json.results || []);
-        }
-      } catch (err) {
-        console.error('Geocoding failed:', err);
-      } finally {
-        setLocationLoading(false);
-      }
-    }, 400);
-
-    return () => clearTimeout(delayDebounceId);
-  }, [locationSearch, locationDirty]);
-
   // Live theme preview
   useEffect(() => {
     const previewColor = formData.themeColor || '#6366f1';
-    const secondaryColor = {
-      '#6366f1': '#a855f7', // Indigo -> Purple
-      '#10b981': '#06b6d4', // Emerald -> Cyan
-      '#f59e0b': '#f97316', // Amber -> Orange
-      '#f43f5e': '#d946ef', // Rose -> Fuchsia
-      '#0ea5e9': '#6366f1', // Sky -> Indigo
-      '#8b5cf6': '#ec4899', // Violet -> Pink
-    }[previewColor] || '#a855f7';
-
+    const secondaryColor = resolveSecondary(formData.themeColor);
     document.documentElement.style.setProperty('--accent-color', previewColor);
     document.documentElement.style.setProperty('--accent-secondary', secondaryColor);
 
     return () => {
       const originalColor = config?.themeColor || '#6366f1';
-      const originalSecondary = {
-        '#6366f1': '#a855f7',
-        '#10b981': '#06b6d4',
-        '#f59e0b': '#f97316',
-        '#f43f5e': '#d946ef',
-        '#0ea5e9': '#6366f1',
-        '#8b5cf6': '#ec4899',
-      }[originalColor] || '#a855f7';
-
+      const originalSecondary = resolveSecondary(originalColor);
       document.documentElement.style.setProperty('--accent-color', originalColor);
       document.documentElement.style.setProperty('--accent-secondary', originalSecondary);
     };

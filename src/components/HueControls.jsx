@@ -19,7 +19,7 @@ const HueControls = () => {
   const hueConfig = config?.hue;
   const isConfigured = hueConfig?.ip && hueConfig?.username;
 
-  const fetchRooms = async (showLoading = false) => {
+  const fetchRooms = React.useCallback(async (showLoading = false) => {
     if (showLoading) setLoading(true);
     try {
       const res = await fetch('/api/hue/groups');
@@ -67,23 +67,26 @@ const HueControls = () => {
     } finally {
       if (showLoading) setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (!isConfigured) return;
 
     fetchRooms(true);
 
+    const anyLightOn = roomsRef.current.some(r => r.on);
+    const pollInterval = anyLightOn ? 5000 : 30000; // Backoff when everything is off
+
     const interval = setInterval(() => {
       fetchRooms(false);
-    }, 5000);
+    }, pollInterval);
 
     return () => {
       clearInterval(interval);
       // Clean up any pending debounced updates on unmount
       Object.values(pendingTimeouts.current).forEach(clearTimeout);
     };
-  }, [isConfigured]);
+  }, [isConfigured, fetchRooms]);
 
   const toggleRoom = async (id) => {
     const target = rooms.find(r => r.id === id);

@@ -48,6 +48,11 @@ const HomeWizardEnergy = () => {
   const [activeTariff, setActiveTariff] = useState(1);
   // Day-start baselines (reset each calendar day)
   const [dayBaselines, setDayBaselines] = useState(() => loadDayBaselines());
+  // Ref to hold the latest baselines for the interval closure
+  const dayBaselinesRef = React.useRef(dayBaselines);
+  useEffect(() => {
+    dayBaselinesRef.current = dayBaselines;
+  }, [dayBaselines]);
   
   // Historical data (per 15-minute rolling window for the 24h day)
   const [dayHistory, setDayHistory] = useState(() => loadDayHistory());
@@ -60,7 +65,10 @@ const HomeWizardEnergy = () => {
     
     const fetchData = async () => {
       try {
-        setLoading(true);
+        setLoading(prev => {
+          if (!prev && activePower === 245) return true; // Only show loading spinner on initial load
+          return prev;
+        });
         const res = await fetch(`/api/energy?ip=${ip}`);
         if (!res.ok) throw new Error('HomeWizard offline');
         const data = await res.json();
@@ -76,7 +84,7 @@ const HomeWizardEnergy = () => {
         setGasMeter(totalGas || 0);
 
         // Establish or reset day-start baselines
-        let baselines = dayBaselines;
+        let baselines = dayBaselinesRef.current;
         let needsSave = false;
 
         if (!baselines || baselines.day !== todayKey()) {
@@ -161,6 +169,8 @@ const HomeWizardEnergy = () => {
   const topLimit = 4;
   const heightLimit = bottomY - topLimit;
   
+  const currentSlot = getSlotIndex(); // Only calculate once per render
+  
   const drawPaths = (historyArray, isGas) => {
     const maxVal = Math.max(...historyArray, isGas ? 0.05 : 500);
     const stepX = (width - paddingX * 2) / 95;
@@ -173,7 +183,6 @@ const HomeWizardEnergy = () => {
       return { x, y };
     });
     
-    const currentSlot = getSlotIndex();
     const activePoints = points.slice(0, currentSlot + 1);
     
     if (activePoints.length === 0) return { line: '', area: '' };
@@ -188,7 +197,6 @@ const HomeWizardEnergy = () => {
 
   const elecPaths = drawPaths(dayHistory.elec, false);
   const gasPaths = drawPaths(dayHistory.gas, true);
-  const currentSlot = getSlotIndex();
   const stepX = (width - paddingX * 2) / 95;
   const nowX = paddingX + currentSlot * stepX;
 
@@ -372,7 +380,8 @@ const HomeWizardEnergy = () => {
         const totalToday    = elecCostToday + gasCostToday;
         const daysInMonth   = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
         // Extrapolate today's cost to a full 24-hour day, then scale to the month
-        const hoursElapsed  = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
+        const computeNow = new Date(); // Compute locally rather than grabbing from module-level state
+        const hoursElapsed  = computeNow.getHours() + computeNow.getMinutes() / 60 + computeNow.getSeconds() / 3600;
         const fractionOfDay = Math.max(hoursElapsed / 24, 1 / 24); // at least 1 hour to avoid wild numbers
         const projectedDay  = totalToday / fractionOfDay;
         const monthEst      = projectedDay * daysInMonth;

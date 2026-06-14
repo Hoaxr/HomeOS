@@ -2746,3 +2746,30 @@ body {
     opacity: 0;
   }
 }
+
+/* App Dashboard Grid Classes */
+.left-columns-group {
+  grid-column: span 8;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+  justify-content: space-between;
+}
+
+.dashboard-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.column-3-group {
+  grid-column: span 4;
+}
+
+.news-ticker-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}

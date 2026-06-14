@@ -14,7 +14,7 @@ const SkyCard = () => {
   const [sunData, setSunData] = useState(null);
   const [now, setNow] = useState(new Date());
 
-  const location = resolveLocation(config);
+  const { lat, lon } = resolveLocation(config);
 
   // Refresh moon phase at midnight, then every 24 h (fix: was never refreshed)
   useEffect(() => {
@@ -26,7 +26,7 @@ const SkyCard = () => {
     const fetchSun = async () => {
       try {
         const res = await fetch(
-          `https://api.open-meteo.com/v1/forecast?latitude=${location.lat}&longitude=${location.lon}` +
+          `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
           `&daily=sunrise,sunset&timezone=auto&forecast_days=1`
         );
         if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -42,7 +42,7 @@ const SkyCard = () => {
         console.warn('Sun fetch failed, trying wttr.in fallback:', e);
       }
       try {
-        const res = await fetch(`https://wttr.in/${location.lat},${location.lon}?format=j1`);
+        const res = await fetch(`https://wttr.in/${lat},${lon}?format=j1`);
         if (!res.ok) throw new Error('wttr.in HTTP ' + res.status);
         const json = await res.json();
         const todayForecast = json.weather?.[0];
@@ -58,7 +58,7 @@ const SkyCard = () => {
       }
     };
     fetchSun();
-  }, [location.lat, location.lon]);
+  }, [lat, lon]);
 
   // Tick every minute
   useEffect(() => {

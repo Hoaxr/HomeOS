@@ -5,10 +5,10 @@ import { mapWwoToWmo } from '../utils/weather';
 
 const WeatherContext = createContext(null);
 
+const RAIN_CODES = new Set([51, 53, 55, 61, 63, 65, 80, 81, 82]);
 const WMO_TO_FORECAST_CONDITION = (code) => {
   if (code === 0) return 'Sunny';
-  if (code <= 3) return 'Cloudy';
-  if ([51, 53, 55, 61, 63, 65, 80, 81, 82].includes(code)) return 'Rain';
+  if (RAIN_CODES.has(code)) return 'Rain';
   return 'Cloudy';
 };
 

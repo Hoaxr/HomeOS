@@ -71,18 +71,21 @@ const MOCK_FALLBACKS = {
   }
 };
 
+// Map period to CoinGecko response field name & sparkline slice size
+// CoinGecko sparkline_in_7d has 168 data points (1 per hour over 7 days)
+const PERIOD_CONFIG = {
+  '1h':  { field: 'price_change_percentage_1h_in_currency',  label: '1h',  slice: 1 },
+  '6h':  { field: 'price_change_percentage_24h',             label: '6h',  slice: 6 },   // CoinGecko free tier has no 6h field; use 24h % but slice 6 hours of chart
+  '24h': { field: 'price_change_percentage_24h',             label: '24h', slice: 24 },
+  '48h': { field: 'price_change_percentage_24h',             label: '48h', slice: 48 },  // no 48h field; approximate
+  '7d':  { field: 'price_change_percentage_7d_in_currency',  label: '7d',  slice: 168 },
+};
+
+const COMPACT_FMT = new Intl.NumberFormat('en-GB', { notation: "compact", compactDisplay: "short" });
+
 const CryptoItem = ({ id, data, period }) => {
   if (!data) return null;
 
-  // Map period to CoinGecko response field name & sparkline slice size
-  // CoinGecko sparkline_in_7d has 168 data points (1 per hour over 7 days)
-  const PERIOD_CONFIG = {
-    '1h':  { field: 'price_change_percentage_1h_in_currency',  label: '1h',  slice: 1 },
-    '6h':  { field: 'price_change_percentage_24h',             label: '6h',  slice: 6 },   // CoinGecko free tier has no 6h field; use 24h % but slice 6 hours of chart
-    '24h': { field: 'price_change_percentage_24h',             label: '24h', slice: 24 },
-    '48h': { field: 'price_change_percentage_24h',             label: '48h', slice: 48 },  // no 48h field; approximate
-    '7d':  { field: 'price_change_percentage_7d_in_currency',  label: '7d',  slice: 168 },
-  };
   const cfg = PERIOD_CONFIG[period] || PERIOD_CONFIG['7d'];
   const pctChange = data[cfg.field] ?? data.price_change_percentage_24h;
   const isUp = pctChange >= 0;
@@ -118,7 +121,7 @@ const CryptoItem = ({ id, data, period }) => {
             {isUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
             {Math.abs(pctChange).toFixed(1)}% ({cfg.label})
           </span>
-          <span className="volume">Vol: {new Intl.NumberFormat('en-GB', { notation: "compact", compactDisplay: "short" }).format(data.total_volume)}</span>
+          <span className="volume">Vol: {COMPACT_FMT.format(data.total_volume)}</span>
         </div>
       </div>
     </div>
@@ -132,7 +135,10 @@ const CryptoStats = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const selectedCoins = config?.crypto || ['bitcoin', 'ethereum', 'solana', 'ripple'];
+  const selectedCoins = React.useMemo(
+    () => config?.crypto || ['bitcoin', 'ethereum', 'solana', 'ripple'],
+    [config?.crypto]
+  );
   const cryptoPeriod = config?.cryptoPeriod || '7d';
   const coinsKey = selectedCoins.join(',');
 
@@ -153,18 +159,6 @@ const CryptoStats = () => {
           mapped[coin.id] = coin;
         });
         
-        // Fetch Fear & Greed index
-        const fgRes = await fetch('https://api.alternative.me/fng/?limit=1');
-        if (fgRes.ok) {
-          const fgData = await fgRes.json();
-          if (fgData.data?.[0]) {
-            setFgi({
-              value: parseInt(fgData.data[0].value),
-              label: fgData.data[0].value_classification
-            });
-          }
-        }
-
         setPrices(mapped);
         setError(null);
       } catch (e) {
@@ -192,7 +186,23 @@ const CryptoStats = () => {
           return fallbacks;
         });
         
-        setError(null);
+        setError("CoinGecko API unavailable");
+      }
+      
+      try {
+        // Fetch Fear & Greed index independently
+        const fgRes = await fetch('https://api.alternative.me/fng/?limit=1');
+        if (fgRes.ok) {
+          const fgData = await fgRes.json();
+          if (fgData.data?.[0]) {
+            setFgi({
+              value: parseInt(fgData.data[0].value),
+              label: fgData.data[0].value_classification
+            });
+          }
+        }
+      } catch (e) {
+        console.warn("Fear & Greed fetch failed:", e);
       } finally {
         setLoading(false);
       }
