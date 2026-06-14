@@ -38,9 +38,18 @@ const SettingsPage = ({ onClose }) => {
       energyTariffNormal: base.energyTariffNormal || 0.22,
       energyTariffDal: base.energyTariffDal || 0.20,
       gasTariff: base.gasTariff || 1.05,
+      clocks: base.clocks || [
+        { id: 'nl', label: 'Rotterdam', timezone: 'Europe/Amsterdam', flag: '🇳🇱' },
+        { id: 'uk', label: 'London', timezone: 'Europe/London', flag: '🇬🇧' },
+        { id: 'us', label: 'New York', timezone: 'America/New_York', flag: '🇺🇸' },
+        { id: 'jp', label: 'Tokyo', timezone: 'Asia/Tokyo', flag: '🇯🇵' },
+        { id: 'au', label: 'Sydney', timezone: 'Australia/Sydney', flag: '🇦🇺' }
+      ],
       isConfigured: true
     };
   });
+
+  const [locationDirty, setLocationDirty] = useState(false);
 
   const {
     locationSearch,
