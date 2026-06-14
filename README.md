@@ -8,6 +8,12 @@ A premium, glassmorphic personal home dashboard designed to bring your smart hom
 
 ---
 
+## 📸 Preview
+
+![HomeOS Dashboard](docs/screenshot.png)
+
+---
+
 ## ✨ Features
 
 - **💡 Philips Hue Control**: Manage your home lights with real-time toggle switches and brightness sliders routed securely through a local API proxy.
