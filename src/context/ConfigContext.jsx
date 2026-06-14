@@ -24,7 +24,11 @@ export const ConfigProvider = ({ children }) => {
   useEffect(() => {
     const loadConfig = async () => {
       try {
-        const res = await fetch('/api/config');
+        const fetchPromise = fetch('/api/config');
+        const delayPromise = new Promise(resolve => setTimeout(resolve, 1500)); // 1.5s minimum delay
+        
+        const [res] = await Promise.all([fetchPromise, delayPromise]);
+        
         if (res.ok) {
           const data = await res.json();
           if (data) {
