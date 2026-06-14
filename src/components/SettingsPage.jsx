@@ -10,38 +10,6 @@ import { resolveSecondary } from '../utils/theme';
 import { useLocationSearch } from '../hooks/useLocationSearch';
 import { AVAILABLE_CLOCKS } from '../utils/all_clocks';
 
-const POPULAR_COINS = [
-  { id: 'bitcoin', name: 'Bitcoin', symbol: 'BTC' },
-  { id: 'ethereum', name: 'Ethereum', symbol: 'ETH' },
-  { id: 'binancecoin', name: 'BNB', symbol: 'BNB' },
-  { id: 'solana', name: 'Solana', symbol: 'SOL' },
-  { id: 'ripple', name: 'XRP', symbol: 'XRP' },
-  { id: 'cardano', name: 'Cardano', symbol: 'ADA' },
-  { id: 'dogecoin', name: 'Dogecoin', symbol: 'DOGE' },
-  { id: 'shiba-inu', name: 'Shiba Inu', symbol: 'SHIB' },
-  { id: 'polkadot', name: 'Polkadot', symbol: 'DOT' },
-  { id: 'litecoin', name: 'Litecoin', symbol: 'LTC' },
-  { id: 'chainlink', name: 'Chainlink', symbol: 'LINK' },
-  { id: 'uniswap', name: 'Uniswap', symbol: 'UNI' },
-  { id: 'stellar', name: 'Stellar', symbol: 'XLM' },
-  { id: 'vechain', name: 'VeChain', symbol: 'VET' },
-  { id: 'cosmos', name: 'Cosmos', symbol: 'ATOM' },
-  { id: 'monero', name: 'Monero', symbol: 'XMR' },
-  { id: 'avalanche-2', name: 'Avalanche', symbol: 'AVAX' },
-  { id: 'matic-network', name: 'Polygon', symbol: 'MATIC' },
-  { id: 'tron', name: 'TRON', symbol: 'TRX' },
-  { id: 'near', name: 'NEAR Protocol', symbol: 'NEAR' },
-  { id: 'pepe', name: 'Pepe', symbol: 'PEPE' },
-  { id: 'render-token', name: 'Render', symbol: 'RNDR' },
-  { id: 'fetch-ai', name: 'Fetch.ai', symbol: 'FET' },
-  { id: 'fantom', name: 'Fantom', symbol: 'FTM' },
-  { id: 'optimism', name: 'Optimism', symbol: 'OP' },
-  { id: 'arbitrum', name: 'Arbitrum', symbol: 'ARB' },
-  { id: 'sui', name: 'Sui', symbol: 'SUI' },
-  { id: 'aptos', name: 'Aptos', symbol: 'APT' },
-  { id: 'hedera-hashgraph', name: 'Hedera', symbol: 'HBAR' },
-  { id: 'kaspa', name: 'Kaspa', symbol: 'KAS' }
-];
 
 const SettingsPage = ({ onClose }) => {
   const { config, saveConfig, clearConfig } = useConfig();
