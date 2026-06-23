@@ -77,7 +77,7 @@ async function getToken() {
   }]);
 
   const res = await fetchCamera({
-    hostname: camConfig.ip.split(':')[0], port: 443,
+    hostname: camConfig.ip.split(':')[0], port: parseInt(camConfig.ip.split(':')[1] || 443, 10),
     path: '/api.cgi?cmd=Login&token=null',
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
@@ -210,7 +210,7 @@ function reolinkPlugin() {
           const tok = await getToken();
           const camConfig = getReolinkConfig();
           const snap = await fetchCamera({
-            hostname: camConfig.ip.split(':')[0], port: 443,
+            hostname: camConfig.ip.split(':')[0], port: parseInt(camConfig.ip.split(':')[1] || 443, 10),
             path: `/cgi-bin/api.cgi?cmd=Snap&channel=0&rs=${Date.now()}&token=${tok}`,
             method: 'GET',
           });
@@ -220,7 +220,7 @@ function reolinkPlugin() {
             token = null;
             const tok2 = await getToken();
             const snap2 = await fetchCamera({
-              hostname: camConfig.ip.split(':')[0], port: 443,
+              hostname: camConfig.ip.split(':')[0], port: parseInt(camConfig.ip.split(':')[1] || 443, 10),
               path: `/cgi-bin/api.cgi?cmd=Snap&channel=0&rs=${Date.now()}&token=${tok2}`,
               method: 'GET',
             });
