@@ -219,7 +219,7 @@ app.get('/api/rss', async (req, res) => {
   }
 });
 
-app.all('/api/hue', async (req, res) => {
+app.use('/api/hue', async (req, res) => {
   if (req.method === 'OPTIONS') return res.status(204).end();
 
   try {
@@ -228,12 +228,8 @@ app.all('/api/hue', async (req, res) => {
       return res.status(400).json({ error: 'Hue is not configured' });
     }
 
-    // Convert `/api/hue?path=/lights` -> `/lights`
-    // Or it might be passing the path as part of the query... Let's look at vite.config.js:
-    // It did `const url = new URL(req.url, 'http://localhost'); const targetUrl = \`http://${hueConfig.ip}/api/${hueConfig.username}${url.pathname}${url.search}\`;`
-    // Wait, in express, `req.originalUrl` or `req.url` retains the `/api/hue` part. We should replace `/api/hue` with empty.
-    
-    const targetUrl = `http://${hueConfig.ip}/api/${hueConfig.username}${req.url.replace('/api/hue', '')}`;
+    // Inside app.use('/api/hue'), req.url contains the remaining path (e.g., '/groups')
+    const targetUrl = `http://${hueConfig.ip}/api/${hueConfig.username}${req.url}`;
 
     if (req.method === 'GET') {
       const targetRes = await fetch(targetUrl);
