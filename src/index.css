@@ -296,6 +296,7 @@ body {
   padding: 0;
   display: flex;
   flex-direction: column;
+  height: 100%;
 }
 
 .doorbell-card .card-header {
@@ -2762,6 +2763,7 @@ body {
   grid-template-columns: 1fr 1fr;
   gap: 16px;
   align-items: stretch;
+  flex: 1;
 }
 
 .main-grid > .column-3-group {
