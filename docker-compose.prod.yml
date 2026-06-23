@@ -8,7 +8,7 @@ services:
     working_dir: /app
     # env_file:
     #   - .env.homeos # Uncomment if you decide to add environment variables later
-    command: /bin/sh -c "npm install && npm run build && npm start"
+    command: /bin/sh -c "npm install --include=dev && npm run build && npm start"
     environment:
       - NODE_ENV=production
       - TZ=Europe/Amsterdam
