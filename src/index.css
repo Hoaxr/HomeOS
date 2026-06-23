@@ -1,5 +1,5 @@
 :root {
-  --bg-color: #050507;
+  --bg-color: #000000;
   --card-bg: rgba(255, 255, 255, 0.03);
   --card-border: rgba(255, 255, 255, 0.08);
   --accent-color: #6366f1;
@@ -36,6 +36,13 @@ body {
   min-height: 100vh;
   padding: 20px 24px 8px 24px;
   gap: 12px;
+  transition: opacity 0.5s ease-out, filter 0.5s ease-out, transform 10s ease-in-out;
+}
+
+.dashboard-container.is-idle {
+  opacity: 0.3;
+  filter: grayscale(0.6);
+  transition: opacity 3s ease-in-out, filter 3s ease-in-out, transform 10s ease-in-out;
 }
 
 .glass-card {

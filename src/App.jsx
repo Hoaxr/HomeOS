@@ -15,11 +15,17 @@ import NewsTicker from './components/NewsTicker';
 import { Settings } from 'lucide-react';
 import logoUrl from './assets/logo.png';
 import { resolveSecondary } from './utils/theme';
+import { usePixelShift } from './hooks/usePixelShift';
+import { useIdle } from './hooks/useIdle';
 
 function App() {
   const { config, isLoaded } = useConfig();
   const [isEditingSettings, setIsEditingSettings] = useState(false);
   const themeColor = config?.themeColor || '#6366f1';
+
+  // OLED Protection Hooks
+  const pixelShift = usePixelShift();
+  const isIdle = useIdle(300000); // 5 minutes idle timeout
 
   useEffect(() => {
     const secondaryColor = resolveSecondary(themeColor);
@@ -50,7 +56,12 @@ function App() {
   }
 
   return (
-    <div className="dashboard-container">
+    <div 
+      className={`dashboard-container ${isIdle ? 'is-idle' : ''}`}
+      style={{
+        transform: `translate(${pixelShift.x}px, ${pixelShift.y}px)`
+      }}
+    >
       <header className="header glass-card">
         <div className="logo-group">
           <img src={logoUrl} alt="HomeOS" className="header-logo" />
