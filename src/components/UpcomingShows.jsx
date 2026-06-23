@@ -2,14 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Tv, Calendar, Link } from 'lucide-react';
 import { useConfig } from '../context/ConfigContext';
 
-const STORAGE_KEY = 'trakt_auth';
 const API = 'https://api.trakt.tv';
-
-const loadAuth = () => {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch { return null; }
-};
-const saveAuth = (auth) => localStorage.setItem(STORAGE_KEY, JSON.stringify(auth));
-const clearAuth = () => localStorage.removeItem(STORAGE_KEY);
 
 const getRelativeDay = (dateStr) => {
   const today    = new Date().toISOString().split('T')[0];
@@ -59,7 +52,6 @@ const DeviceAuthPrompt = ({ clientId, clientSecret, onSuccess }) => {
           if (tokenRes.status === 200) {
             clearInterval(pollRef.current);
             const token = await tokenRes.json();
-            saveAuth({ ...token, stored_at: Date.now() });
             onSuccess(token);
           }
           // 400 = pending, 404 = expired — just keep polling
@@ -112,8 +104,8 @@ const DeviceAuthPrompt = ({ clientId, clientSecret, onSuccess }) => {
 // ── Main component ─────────────────────────────────────────────────────────
 
 const UpcomingShows = () => {
-  const { config } = useConfig();
-  const [auth, setAuth] = useState(() => loadAuth());
+  const { config, saveConfig } = useConfig();
+  const auth = config?.traktAuth || null;
   const [shows, setShows] = useState([]);
   const [watchStats, setWatchStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -129,8 +121,9 @@ const UpcomingShows = () => {
   const maxShows = config?.maxShows || 5;
 
   const handleDisconnect = () => {
-    clearAuth();
-    setAuth(null);
+    const newConfig = { ...config };
+    delete newConfig.traktAuth;
+    saveConfig(newConfig);
     setShows([]);
     setSessionExpired(false);
   };
@@ -156,8 +149,9 @@ const UpcomingShows = () => {
 
         if (res.status === 401) {
           // Token expired — show a clear message instead of silently dropping back to login
-          clearAuth();
-          setAuth(null);
+          const newConfig = { ...config };
+          delete newConfig.traktAuth;
+          saveConfig(newConfig);
           setSessionExpired(true);
           setLoading(false);
           return;
@@ -277,7 +271,7 @@ const UpcomingShows = () => {
           <DeviceAuthPrompt
             clientId={clientId}
             clientSecret={clientSecret}
-            onSuccess={(token) => setAuth(token)}
+            onSuccess={(token) => saveConfig({ ...config, traktAuth: { ...token, stored_at: Date.now() } })}
           />
         )}
 
