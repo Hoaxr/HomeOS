@@ -29,7 +29,7 @@ const AnimatedWeatherIcon = ({ code, size = 48, className = '', uid = '' }) => {
     return (
       <svg viewBox="0 0 64 64" width={size} height={size} className={`animated-weather-icon ${className}`}>
         <defs>
-          <linearGradient id={gId} x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient gradientUnits="userSpaceOnUse" id={gId} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#ffb300" />
             <stop offset="100%" stopColor="#f4511e" />
           </linearGradient>
@@ -64,11 +64,11 @@ const AnimatedWeatherIcon = ({ code, size = 48, className = '', uid = '' }) => {
     return (
       <svg viewBox="0 0 64 64" width={size} height={size} className={`animated-weather-icon ${className}`}>
         <defs>
-          <linearGradient id={sunId} x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient gradientUnits="userSpaceOnUse" id={sunId} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#ffb300" />
             <stop offset="100%" stopColor="#f4511e" />
           </linearGradient>
-          <linearGradient id={cloudId} x1="0%" y1="0%" x2="0%" y2="100%">
+          <linearGradient gradientUnits="userSpaceOnUse" id={cloudId} x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor="#ffffff" />
             <stop offset="100%" stopColor="#8693a1" />
           </linearGradient>
@@ -106,7 +106,7 @@ const AnimatedWeatherIcon = ({ code, size = 48, className = '', uid = '' }) => {
     return (
       <svg viewBox="0 0 64 64" width={size} height={size} className={`animated-weather-icon ${className}`}>
         <defs>
-          <linearGradient id={gId} x1="0%" y1="0%" x2="0%" y2="100%">
+          <linearGradient gradientUnits="userSpaceOnUse" id={gId} x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor="#ffffff" />
             <stop offset="100%" stopColor="#b0bec5" />
           </linearGradient>
@@ -127,7 +127,7 @@ const AnimatedWeatherIcon = ({ code, size = 48, className = '', uid = '' }) => {
     return (
       <svg viewBox="0 0 64 64" width={size} height={size} className={`animated-weather-icon ${className}`}>
         <defs>
-          <linearGradient id={gId} x1="0%" y1="0%" x2="0%" y2="100%">
+          <linearGradient gradientUnits="userSpaceOnUse" id={gId} x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor="#ffffff" />
             <stop offset="100%" stopColor="#90a4ae" />
           </linearGradient>
@@ -149,7 +149,7 @@ const AnimatedWeatherIcon = ({ code, size = 48, className = '', uid = '' }) => {
     return (
       <svg viewBox="0 0 64 64" width={size} height={size} className={`animated-weather-icon ${className}`}>
         <defs>
-          <linearGradient id={gId} x1="0%" y1="0%" x2="0%" y2="100%">
+          <linearGradient gradientUnits="userSpaceOnUse" id={gId} x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor="#ffffff" />
             <stop offset="100%" stopColor="#b0bec5" />
           </linearGradient>
@@ -172,11 +172,11 @@ const AnimatedWeatherIcon = ({ code, size = 48, className = '', uid = '' }) => {
     return (
       <svg viewBox="0 0 64 64" width={size} height={size} className={`animated-weather-icon ${className}`}>
         <defs>
-          <linearGradient id={cloudId} x1="0%" y1="0%" x2="0%" y2="100%">
+          <linearGradient gradientUnits="userSpaceOnUse" id={cloudId} x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor="#78909c" />
             <stop offset="100%" stopColor="#37474f" />
           </linearGradient>
-          <linearGradient id={lightId} x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient gradientUnits="userSpaceOnUse" id={lightId} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#fff176" />
             <stop offset="100%" stopColor="#fbc02d" />
           </linearGradient>
@@ -198,7 +198,7 @@ const AnimatedWeatherIcon = ({ code, size = 48, className = '', uid = '' }) => {
     return (
       <svg viewBox="0 0 64 64" width={size} height={size} className={`animated-weather-icon ${className}`}>
         <defs>
-          <linearGradient id={gId} x1="0%" y1="0%" x2="0%" y2="100%">
+          <linearGradient gradientUnits="userSpaceOnUse" id={gId} x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor="#ffffff" />
             <stop offset="100%" stopColor="#78909c" />
           </linearGradient>
@@ -220,11 +220,11 @@ const AnimatedWeatherIcon = ({ code, size = 48, className = '', uid = '' }) => {
   return (
     <svg viewBox="0 0 64 64" width={size} height={size} className={`animated-weather-icon ${className}`}>
       <defs>
-        <linearGradient id={backId} x1="0%" y1="0%" x2="0%" y2="100%">
+        <linearGradient gradientUnits="userSpaceOnUse" id={backId} x1="0%" y1="0%" x2="0%" y2="100%">
           <stop offset="0%" stopColor="#bcc5cf" />
           <stop offset="100%" stopColor="#718096" />
         </linearGradient>
-        <linearGradient id={frontId} x1="0%" y1="0%" x2="0%" y2="100%">
+        <linearGradient gradientUnits="userSpaceOnUse" id={frontId} x1="0%" y1="0%" x2="0%" y2="100%">
           <stop offset="0%" stopColor="#ffffff" />
           <stop offset="100%" stopColor="#a0aec0" />
         </linearGradient>
